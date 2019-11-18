@@ -1,0 +1,163 @@
+[parity]
+mode = "last"
+mode_timeout = 300
+mode_alarm = 3600
+auto_update = "none"
+auto_update_delay = 200
+auto_update_check_frequency = 50
+release_track = "current"
+public_node = false
+no_download = false
+no_consensus = false
+no_persistent_txqueue = false
+
+chain = "seekchain"
+base_path = "testenv"
+db_path = "testenv/chains"
+keys_path = "testenv/keys"
+identity = ""
+light = false
+no_hardcoded_sync = false
+
+[account]
+unlock = ["0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"]
+password = ["testenv/password.file"]
+keys_iterations = 10240
+
+#[private_tx]
+#enabled = true
+#signer = "0x200b9ef0e5ab6406ac1b1fa32d02a83d0a2db268"
+#validators = ["0x200b9ef0e5ab6406ac1b1fa32d02a83d0a2db268"]
+#passwords = "/Users/admin/parity-eth/password.file"
+#account = "0x200b9ef0e5ab6406ac1b1fa32d02a83d0a2db268"
+#sstore_url = "http://localhost:8082"
+#sstore_threshold = 0
+
+#[ui]
+#force = false
+#disable = false
+#port = 8180
+#interface = "127.0.0.1"
+#path = "/Users/admin/parity-eth/signer"
+
+[network]
+port = 30303
+min_peers = 25
+max_peers = 50
+nat = "any"
+bootnodes = ["enode://bc716ce57b5a1ed9c8891fb3607293ad5a356fd9b6bc3289ff7a546f4b5a8206fdead5708e638e79d0d2de55d7b8d089a527903199d45c445e0c683cf105a48e@134.209.104.209:30303"]
+discovery = true
+warp = true
+allow_ips = "all"
+snapshot_peers = 0
+max_pending_peers = 64
+no_serve_light = false
+
+reserved_only = false
+reserved_peers = "/Users/admin/parity-eth/path_to_file"
+
+[rpc]
+disable = false
+port = 8545
+interface = "local"
+cors = ["*"]
+apis = ["web3", "eth", "net", "parity", "parity_set", "traces", "rpc", "secretstore"]
+hosts = ["*"]
+allow_missing_blocks = false
+
+[websockets]
+disable = false
+port = 8546
+interface = "local"
+origins = ["*"]
+apis = ["web3", "eth", "net", "parity", "traces", "rpc", "secretstore"]
+hosts = ["*"]
+
+[ipc]
+disable = false
+#path = "/Users/admin/parity-eth/jsonrpc.ipc"
+apis = ["web3", "eth", "net", "parity", "parity_accounts", "personal", "traces", "rpc", "secretstore"]
+
+#[secretstore]
+#disable = false
+#disable_http = false
+#acl_contract = "registry"
+#service_contract = "none"
+#service_contract_srv_gen = "none"
+#service_contract_srv_retr = "none"
+#service_contract_doc_store = "none"
+#service_contract_doc_sretr = "none"
+#server_set_contract = "registry"
+#nodes = []
+#http_interface = "local"
+#http_port = 8082
+#interface = "local"
+#port = 8083
+#path = "/Users/admin/parity-eth/secretstore"
+
+[ipfs]
+enable = false
+port = 5001
+interface = "local"
+cors = ["null"]
+hosts = ["none"]
+
+[mining]
+author = "0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"
+engine_signer = "0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"
+force_sealing = true
+reseal_on_txs = "all"
+reseal_min_period = 4000
+reseal_max_period = 60000
+work_queue_size = 20
+relay_set = "cheap"
+min_gas_price = 0
+usd_per_tx = "0.0001"
+usd_per_eth = "auto"
+price_update_period = "hourly"
+gas_floor_target = "8000000"
+gas_cap = "10000000"
+tx_queue_size = 8192
+tx_queue_locals = ["0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"]
+tx_gas_limit = "10000000"
+tx_time_limit = 100 #ms
+tx_queue_no_unfamiliar_locals = false
+tx_queue_no_early_reject = false
+extra_data = "Parity"
+remove_solved = false
+notify_work = ["http://localhost:3001"]
+refuse_service_transactions = false
+
+[footprint]
+tracing = "auto"
+pruning = "auto"
+pruning_history = 64
+pruning_memory = 500
+cache_size_db = 64
+cache_size_blocks = 8
+cache_size_queue = 50
+cache_size_state = 25
+cache_size = 128 # Overrides above caches with total size
+db_compaction = "ssd"
+fat_db = "auto"
+scale_verifiers = true
+num_verifiers = 6
+
+[light]
+on_demand_response_time_window = 2
+on_demand_request_backoff_start = 9
+on_demand_request_backoff_max = 15
+on_demand_request_backoff_rounds_max = 100
+on_demand_request_consecutive_failures = 1
+
+[snapshots]
+disable_periodic = false
+
+[misc]
+logging = "own_tx=trace"
+#log_file = "/Users/admin/parity-eth/log/parity.log"
+color = true
+
+[whisper]
+enabled = false
+pool_size = 20

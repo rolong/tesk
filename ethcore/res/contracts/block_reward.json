@@ -1,0 +1,28 @@
+[
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "benefactors",
+        "type": "address[]"
+      },
+      {
+        "name": "kind",
+        "type": "uint16[]"
+      },
+      {
+        "name": "nHashRate",
+        "type": "uint256"
+      },
+      {
+        "name": "rewardAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "reward",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

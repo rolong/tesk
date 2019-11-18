@@ -1,0 +1,31 @@
+{
+  "name": "POCC-ETHASH",
+  "engine": {
+    "Ethash": {
+      "params": {
+        "minimumDifficulty": "0x020000",
+        "difficultyBoundDivisor": "0x0800",
+        "durationLimit": "0x0d",
+        "blockReward": "0x4563918244F40000",
+        "homesteadTransition": 0
+      }
+    }
+  },
+  "genesis": {
+    "seal": {
+      "generic": "0x0"
+    },
+    "difficulty": "0x20000",
+    "gasLimit": "0x2fefd8"
+  },
+  "params": {
+    "networkID" : "0x2",
+    "maximumExtraDataSize": "0x20",
+    "minGasLimit": "0x1388",
+    "gasLimitBoundDivisor": 1
+  },
+  "accounts": {
+    "0x882cfeb310f4b6e373036044b422212a8b3c2807": { "balance": "10000", "builtin": { "name":   "ecrecover", "pricing": { "linear": { "base": 3000, "word": 0 } } } },
+    "0x2b99b58fd80a81c0edad326c32be526e6a6bccc7": { "balance": "1000", "builtin": { "name": "sha256", "pricing": { "linear": { "base": 60, "word": 12 } } } }
+  }
+}

@@ -1,0 +1,13 @@
+[package]
+name = "shabal"
+version = "0.1.0"
+authors = ["luomijie <zhiwei-luo@hotmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+common-types = { path = "../ethcore/types" }
+ethereum-types = "0.4"
+hex = "0.3.1"
+parking_lot = "0.7"
