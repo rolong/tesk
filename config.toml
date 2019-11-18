@@ -12,33 +12,9 @@ no_consensus = false
 no_persistent_txqueue = false
 
 chain = "seekchain"
-base_path = "testenv"
-db_path = "testenv/chains"
-keys_path = "testenv/keys"
 identity = ""
 light = false
 no_hardcoded_sync = false
-
-[account]
-unlock = ["0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"]
-password = ["testenv/password.file"]
-keys_iterations = 10240
-
-#[private_tx]
-#enabled = true
-#signer = "0x200b9ef0e5ab6406ac1b1fa32d02a83d0a2db268"
-#validators = ["0x200b9ef0e5ab6406ac1b1fa32d02a83d0a2db268"]
-#passwords = "/Users/admin/parity-eth/password.file"
-#account = "0x200b9ef0e5ab6406ac1b1fa32d02a83d0a2db268"
-#sstore_url = "http://localhost:8082"
-#sstore_threshold = 0
-
-#[ui]
-#force = false
-#disable = false
-#port = 8180
-#interface = "127.0.0.1"
-#path = "/Users/admin/parity-eth/signer"
 
 [network]
 port = 30303
@@ -56,9 +32,6 @@ allow_ips = "all"
 snapshot_peers = 0
 max_pending_peers = 64
 no_serve_light = false
-
-reserved_only = false
-reserved_peers = "/Users/admin/parity-eth/path_to_file"
 
 [rpc]
 disable = false
@@ -82,29 +55,16 @@ disable = false
 #path = "/Users/admin/parity-eth/jsonrpc.ipc"
 apis = ["web3", "eth", "net", "parity", "parity_accounts", "personal", "traces", "rpc", "secretstore"]
 
-#[secretstore]
-#disable = false
-#disable_http = false
-#acl_contract = "registry"
-#service_contract = "none"
-#service_contract_srv_gen = "none"
-#service_contract_srv_retr = "none"
-#service_contract_doc_store = "none"
-#service_contract_doc_sretr = "none"
-#server_set_contract = "registry"
-#nodes = []
-#http_interface = "local"
-#http_port = 8082
-#interface = "local"
-#port = 8083
-#path = "/Users/admin/parity-eth/secretstore"
-
 [ipfs]
 enable = false
 port = 5001
 interface = "local"
 cors = ["null"]
 hosts = ["none"]
+
+[account]
+unlock = ["0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"]
+password = ["/root/seekchain/password.txt"]
 
 [mining]
 author = "0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"
@@ -156,11 +116,6 @@ on_demand_request_consecutive_failures = 1
 
 [snapshots]
 disable_periodic = false
-
-[misc]
-logging = "own_tx=trace"
-#log_file = "/Users/admin/parity-eth/log/parity.log"
-color = true
 
 [whisper]
 enabled = false
