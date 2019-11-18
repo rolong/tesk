@@ -47,7 +47,7 @@ disable = false
 port = 8546
 interface = "local"
 origins = ["*"]
-apis = ["web3", "eth", "net", "parity", "traces", "rpc", "secretstore"]
+apis = ["web3", "eth", "net", "parity", "traces", "rpc", "secretstore", "pubsub"]
 hosts = ["*"]
 
 [ipc]
@@ -63,34 +63,34 @@ cors = ["null"]
 hosts = ["none"]
 
 [account]
-unlock = ["0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"]
-password = ["/root/seekchain/password.txt"]
+#unlock = ["0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"]
+#password = ["/root/seekchain/password.txt"]
 
 [mining]
-author = "0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"
-engine_signer = "0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"
-force_sealing = true
-reseal_on_txs = "all"
-reseal_min_period = 4000
-reseal_max_period = 60000
-work_queue_size = 20
-relay_set = "cheap"
-min_gas_price = 0
-usd_per_tx = "0.0001"
-usd_per_eth = "auto"
-price_update_period = "hourly"
-gas_floor_target = "8000000"
-gas_cap = "10000000"
-tx_queue_size = 8192
-tx_queue_locals = ["0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"]
-tx_gas_limit = "10000000"
-tx_time_limit = 100 #ms
-tx_queue_no_unfamiliar_locals = false
-tx_queue_no_early_reject = false
-extra_data = "Parity"
-remove_solved = false
-notify_work = ["http://localhost:3001"]
-refuse_service_transactions = false
+#author = "0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"
+#engine_signer = "0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"
+#force_sealing = true
+#reseal_on_txs = "all"
+#reseal_min_period = 4000
+#reseal_max_period = 60000
+#work_queue_size = 20
+#relay_set = "cheap"
+#min_gas_price = 0
+#usd_per_tx = "0.0001"
+#usd_per_eth = "auto"
+#price_update_period = "hourly"
+#gas_floor_target = "8000000"
+#gas_cap = "10000000"
+#tx_queue_size = 8192
+#tx_queue_locals = ["0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"]
+#tx_gas_limit = "10000000"
+#tx_time_limit = 100 #ms
+#tx_queue_no_unfamiliar_locals = false
+#tx_queue_no_early_reject = false
+#extra_data = "Parity"
+#remove_solved = false
+#notify_work = ["http://localhost:3001"]
+#refuse_service_transactions = false
 
 [footprint]
 tracing = "auto"
