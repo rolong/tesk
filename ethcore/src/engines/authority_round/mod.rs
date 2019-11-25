@@ -1204,7 +1204,6 @@ impl Engine<EthereumMachine> for AuthorityRound {
         }
 
         let author = *block.header.author();
-        let hash_rate = *block.header.hash_rate();
         let block_reward =U256::from(5);
         beneficiaries.push((author, RewardKind::Author));
 
@@ -1212,7 +1211,7 @@ impl Engine<EthereumMachine> for AuthorityRound {
             Some(ref c) if block.header.number() >= self.block_reward_contract_transition => {
                 let mut call = super::default_system_or_code_call(&self.machine, block);
 
-                let rewards = c.reward(hash_rate, block_reward, &beneficiaries, &mut call)?;
+                let rewards = c.reward(block_reward, &beneficiaries, &mut call)?;
                 rewards.into_iter().map(|(author, amount)| (author, RewardKind::External, amount)).collect()
             }
             _ => {

@@ -130,6 +130,8 @@ const TARGET_TIME_SPAN: u64 = 240;
 const BASE_NET_CAPACITY: u64 = 16384;
 /// The protocol halves the rate at which new SEEK are created every 4 years
 const HALF_TIME: u64 = 525600;
+/// allowed max timestamp difference
+const MAX_TIMESTAMP_DIFFERENCE: u64 = 15;
 
 /// HashRate calculate Epcoh
 const HASH_RATE_CALC_EPOCH: u64 = 21;
@@ -299,6 +301,14 @@ impl Engine<EthereumMachine> for Skhash {
     }
 
     fn verify_block_basic(&self, header: &Header) -> Result<(), Error> {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        if header.timestamp() > now + MAX_TIMESTAMP_DIFFERENCE {
+            Err(EngineError::Custom(format!("verify block: block timestamp in the future, block timestamp: {},, now: {}", header.timestamp(), now).into()))?
+        }
+
         Ok(())
     }
 
@@ -313,7 +323,7 @@ impl Engine<EthereumMachine> for Skhash {
         }
     }
 
-    fn verify_block_family(&self, header: &Header, _parent: &Header) -> Result<(), Error> {
+    fn verify_block_family(&self, header: &Header, parent: &Header) -> Result<(), Error> {
         // we should not calculate deadline for genesis blocks
         if header.number() == 0 {
             return Err(From::from(BlockError::RidiculousNumber(OutOfBounds {
@@ -321,6 +331,15 @@ impl Engine<EthereumMachine> for Skhash {
                 max: None,
                 found: header.number(),
             })));
+        }
+
+        // parent sanity check
+        if parent.hash() != *header.parent_hash() || header.number() != parent.number() + 1 {
+            Err(BlockError::UnknownParent(parent.hash()))?
+        }
+
+        if header.timestamp() <= parent.timestamp() {
+            Err(BlockError::TimestampOverflow)?
         }
 
         // TODO: consider removing these lines.
@@ -337,21 +356,8 @@ impl Engine<EthereumMachine> for Skhash {
         {
             let nonce = SkhashSeal::parse_seal(header.seal())?.nonce.low_u64();
 
-            let client = self
-                .client
-                .read()
-                .as_ref()
-                .and_then(|weak| weak.upgrade())
-                .ok_or("requires client ref, but none registered.")?;
-
-            let parent = client
-                .block_header(BlockId::Hash(*header.parent_hash()))
-                .ok_or("#1 parent block header not found")?
-                .decode()
-                .map_err(|e| e.to_string())?;
-
             let deadline = {
-                let gen_sig = self.next_generation_signature(&parent);
+                let gen_sig = self.next_generation_signature(parent);
                 let account_id = header.author().low_u64();
                 let deadline_unadjusted =
                     self.calculate_deadline(&gen_sig, header.number(), account_id, nonce)?;
@@ -587,7 +593,7 @@ impl Skhash {
                 beneficiaries.push((author, RewardKind::Author));
                 let mut call = engines::default_system_or_code_call(&self.machine, block);
                 trace!(target: "engine", "debug log skhash hash_rate {:?} in blockNumber :{:?}", hash_rate, number);
-                c.reward(hash_rate, init_reward, &beneficiaries, &mut call)?;
+                c.reward(block_reward_amount, &beneficiaries, &mut call)?;
                 return Ok(());
             }
             _ => {
@@ -743,13 +749,48 @@ impl Skhash {
         let mut hash_rate = *parent.hash_rate();
 
         if header.number() % HASH_RATE_CALC_EPOCH == 0 {
-            hash_rate = U256::from(INITIAL_BASE_TARGET) / U256::from(basetarget);
+            //hash_rate = U256::from(INITIAL_BASE_TARGET) / U256::from(basetarget);
+            hash_rate = self.calculate_avg_hashrate(header)?;
             trace!(target: "engine", "calculate_hash_rate hash_rate:{}, base_target:{}", hash_rate, header.base_target());
         }
-
         header.set_hash_rate(hash_rate);
 
         Ok(())
+    }
+
+    fn calculate_avg_hashrate(&self, parent: &Header) -> Result<(U256), Error> {
+        if parent.number() == 0 {
+            return Ok(*parent.hash_rate());
+        }
+        let mut it_header = (*parent).clone();
+
+        let mut count_base_hashrate = U256::from(0);
+        let mut counter = 0u64;
+        let client = self
+            .client
+            .read()
+            .as_ref()
+            .and_then(|weak| weak.upgrade())
+            .ok_or("requires client ref, but none registered.")?;
+
+        loop {
+            it_header = client
+                .block_header(BlockId::Hash(*it_header.parent_hash()))
+                .ok_or("parent block header not found")?
+                .decode()
+                .map_err(|e| e.to_string())?;
+            let basetarget = it_header.base_target();
+            count_base_hashrate += U256::from(INITIAL_BASE_TARGET) / U256::from(basetarget);
+
+            counter += 1;
+            if (counter % HASH_RATE_CALC_EPOCH == 0) || it_header.number() == 0 {
+                break;
+            }
+        }
+
+        let avg_base_hashrate = count_base_hashrate / U256::from(counter);
+
+        Ok(avg_base_hashrate)
     }
 
     fn calculate_deadline(

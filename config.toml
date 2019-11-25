@@ -12,6 +12,9 @@ no_consensus = false
 no_persistent_txqueue = false
 
 chain = "seekchain"
+base_path = "$HOME/.seekchain"
+db_path = "$HOME/.seekchain/chains"
+keys_path = "$HOME/.seekchain/keys"
 identity = ""
 light = false
 no_hardcoded_sync = false
@@ -25,7 +28,8 @@ bootnodes = ["enode://bc716ce57b5a1ed9c8891fb3607293ad5a356fd9b6bc3289ff7a546f4b
 "enode://5cade41b0c78a98f76807eba715c7650b5fc51ab6187f0cbfef0b5ed13393a13ed61efa4342f409ee4007b2fe717cc9a946ba191d6fd7d5af617483b68b373ff@104.236.240.227:30304",
 "enode://8117877deb3f328d0ffef99ebfb3b3c4949025cf24fd04aa9f3d2402110adc100b80d4e178cc4f1c2eac084b1afb1837ac095b9b1c49c543c22c39bd2d6c1b34@13.250.204.142:30304",
 "enode://72bec7b8ed04cd3383fe9bc15f952cbaf24398ed507553d9bb13bb53730eece990bd833f026fc1d74e97a2c6a45b5aa894954e6d681e1368b8d8e2cc5bb4098a@182.61.110.193:30303",
-"enode://6cd33beb94f57faa5e7d70da70850ee773835606f5058c69bfc69b9df81e74f626febd532ae9c1643a8e47c76fb43b5c9d0fbd9128ba89f9689554e4319d68fc@13.251.6.203:30303"]
+"enode://6cd33beb94f57faa5e7d70da70850ee773835606f5058c69bfc69b9df81e74f626febd532ae9c1643a8e47c76fb43b5c9d0fbd9128ba89f9689554e4319d68fc@13.251.6.203:30303",
+"enode://b61370c0e44211e35c52d9e63406b00eef8d1ae0156d0fa783915b4337f52ff80e83bb70d02bf85de19503a1cf0b3ee0d2b99dab6ae3064d8e5e457370350992@106.12.123.218:30303"]
 discovery = true
 warp = true
 allow_ips = "all"
@@ -47,7 +51,7 @@ disable = false
 port = 8546
 interface = "local"
 origins = ["*"]
-apis = ["web3", "eth", "net", "parity", "traces", "rpc", "secretstore", "pubsub"]
+apis = ["web3", "eth", "net", "parity", "traces", "rpc", "secretstore"]
 hosts = ["*"]
 
 [ipc]
@@ -63,34 +67,34 @@ cors = ["null"]
 hosts = ["none"]
 
 [account]
-#unlock = ["0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"]
-#password = ["/root/seekchain/password.txt"]
+unlock = ["0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"]
+password = ["/root/seekchain/password.txt"]
 
 [mining]
-#author = "0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"
-#engine_signer = "0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"
-#force_sealing = true
-#reseal_on_txs = "all"
-#reseal_min_period = 4000
-#reseal_max_period = 60000
-#work_queue_size = 20
-#relay_set = "cheap"
-#min_gas_price = 0
-#usd_per_tx = "0.0001"
-#usd_per_eth = "auto"
-#price_update_period = "hourly"
-#gas_floor_target = "8000000"
-#gas_cap = "10000000"
-#tx_queue_size = 8192
-#tx_queue_locals = ["0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"]
-#tx_gas_limit = "10000000"
-#tx_time_limit = 100 #ms
-#tx_queue_no_unfamiliar_locals = false
-#tx_queue_no_early_reject = false
-#extra_data = "Parity"
-#remove_solved = false
-#notify_work = ["http://localhost:3001"]
-#refuse_service_transactions = false
+author = "0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"
+engine_signer = "0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"
+force_sealing = true
+reseal_on_txs = "all"
+reseal_min_period = 4000
+reseal_max_period = 60000
+work_queue_size = 20
+relay_set = "cheap"
+min_gas_price = 0
+usd_per_tx = "0.0001"
+usd_per_eth = "auto"
+price_update_period = "hourly"
+gas_floor_target = "8000000"
+gas_cap = "10000000"
+tx_queue_size = 8192
+tx_queue_locals = ["0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"]
+tx_gas_limit = "10000000"
+tx_time_limit = 100 #ms
+tx_queue_no_unfamiliar_locals = false
+tx_queue_no_early_reject = false
+extra_data = "Parity"
+remove_solved = false
+notify_work = ["http://localhost:3001"]
+refuse_service_transactions = false
 
 [footprint]
 tracing = "auto"
@@ -120,3 +124,8 @@ disable_periodic = false
 [whisper]
 enabled = false
 pool_size = 20
+
+[misc] 
+logging = "error"
+log_file = "./log/parity.log"
+color = true

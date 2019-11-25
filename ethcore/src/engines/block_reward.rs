@@ -110,15 +110,12 @@ impl BlockRewardContract {
     /// `machine.execute_as_system`).
     pub fn reward(
         &self,
-        hash_rate: U256,
         reward_amout: U256,
         beneficiaries: &[(Address, RewardKind)],
         caller: &mut SystemOrCodeCall,
     ) -> Result<Vec<(Address, U256)>, Error> {
         let input = block_reward_contract::functions::reward::encode_input(
             beneficiaries.iter().map(|&(address, _)| H160::from(address)),
-            beneficiaries.iter().map(|&(_, ref reward_kind)| u16::from(*reward_kind)),
-            hash_rate,
             reward_amout,
         );
         let output = caller(self.kind.clone(), input)

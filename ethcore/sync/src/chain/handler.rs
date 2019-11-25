@@ -145,7 +145,7 @@ impl SyncHandler {
 	pub fn on_peer_connected(sync: &mut ChainSync, io: &mut dyn SyncIo, peer: PeerId) {
 		trace!(target: "sync", "== Connected {}: {}", peer, io.peer_version(peer));
 		if let Err(e) = sync.send_status(io, peer) {
-			debug!(target:"sync", "Error sending status request: {:?}", e);
+			//debug!(target:"sync", "Error sending status request: {:?}", e);
 			io.disconnect_peer(peer);
 		} else {
 			sync.handshaking_peers.insert(peer, Instant::now());
