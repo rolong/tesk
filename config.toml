@@ -24,12 +24,7 @@ port = 30303
 min_peers = 25
 max_peers = 50
 nat = "any"
-bootnodes = ["enode://bc716ce57b5a1ed9c8891fb3607293ad5a356fd9b6bc3289ff7a546f4b5a8206fdead5708e638e79d0d2de55d7b8d089a527903199d45c445e0c683cf105a48e@134.209.104.209:30304",
-"enode://5cade41b0c78a98f76807eba715c7650b5fc51ab6187f0cbfef0b5ed13393a13ed61efa4342f409ee4007b2fe717cc9a946ba191d6fd7d5af617483b68b373ff@104.236.240.227:30304",
-"enode://8117877deb3f328d0ffef99ebfb3b3c4949025cf24fd04aa9f3d2402110adc100b80d4e178cc4f1c2eac084b1afb1837ac095b9b1c49c543c22c39bd2d6c1b34@13.250.204.142:30304",
-"enode://72bec7b8ed04cd3383fe9bc15f952cbaf24398ed507553d9bb13bb53730eece990bd833f026fc1d74e97a2c6a45b5aa894954e6d681e1368b8d8e2cc5bb4098a@182.61.110.193:30303",
-"enode://6cd33beb94f57faa5e7d70da70850ee773835606f5058c69bfc69b9df81e74f626febd532ae9c1643a8e47c76fb43b5c9d0fbd9128ba89f9689554e4319d68fc@13.251.6.203:30303",
-"enode://b61370c0e44211e35c52d9e63406b00eef8d1ae0156d0fa783915b4337f52ff80e83bb70d02bf85de19503a1cf0b3ee0d2b99dab6ae3064d8e5e457370350992@106.12.123.218:30303"]
+bootnodes = ["enode://3334979463ef5ca263562839acde40c1a8e916aa704e13106cf0c778457b3f9f9a149c5f642ced644d26bd30c855da437abf520ebdba12bf9443ab553dfe268e@13.251.6.203:30303","enode://dfdfb7696bc492341c23a0a5bf73c73ed140143e7673f18c7888fd64e4ecc818c243cf4ce9e9c13aa65fb08d0ab4906ed3a8e277d1c3e2839991b46527526fb5@182.61.139.140:30303","enode://5cade41b0c78a98f76807eba715c7650b5fc51ab6187f0cbfef0b5ed13393a13ed61efa4342f409ee4007b2fe717cc9a946ba191d6fd7d5af617483b68b373ff@104.236.240.227:30304"," enode://72bec7b8ed04cd3383fe9bc15f952cbaf24398ed507553d9bb13bb53730eece990bd833f026fc1d74e97a2c6a45b5aa894954e6d681e1368b8d8e2cc5bb4098a@182.61.110.193:30303","enode://b585f731f52cb769cc171f91d27e6a443de036b8e3940a70bf3016e9e92778952fe013be751adb533bff3f7d41f644ea2d924492ba11bd3ffe91768b780595e9@134.209.104.209:30304"]
 discovery = true
 warp = true
 allow_ips = "all"
@@ -67,34 +62,34 @@ cors = ["null"]
 hosts = ["none"]
 
 [account]
-unlock = ["0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"]
-password = ["/root/seekchain/password.txt"]
+#unlock = ["0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"]
+#password = ["/root/seekchain/password.txt"]
 
 [mining]
-author = "0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"
-engine_signer = "0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"
-force_sealing = true
-reseal_on_txs = "all"
-reseal_min_period = 4000
-reseal_max_period = 60000
-work_queue_size = 20
-relay_set = "cheap"
-min_gas_price = 0
-usd_per_tx = "0.0001"
-usd_per_eth = "auto"
-price_update_period = "hourly"
-gas_floor_target = "8000000"
-gas_cap = "10000000"
-tx_queue_size = 8192
-tx_queue_locals = ["0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"]
-tx_gas_limit = "10000000"
-tx_time_limit = 100 #ms
-tx_queue_no_unfamiliar_locals = false
-tx_queue_no_early_reject = false
-extra_data = "Parity"
-remove_solved = false
-notify_work = ["http://localhost:3001"]
-refuse_service_transactions = false
+#author = "0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"
+#engine_signer = "0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"
+#force_sealing = true
+#reseal_on_txs = "all"
+#reseal_min_period = 4000
+#reseal_max_period = 60000
+#work_queue_size = 20
+#relay_set = "cheap"
+#min_gas_price = 0
+#usd_per_tx = "0.0001"
+#usd_per_eth = "auto"
+#price_update_period = "hourly"
+#gas_floor_target = "8000000"
+#gas_cap = "10000000"
+#tx_queue_size = 8192
+#tx_queue_locals = ["0x54e6f8af5fc2f585b269f5992a66cf6b2cfaa6e6"]
+#tx_gas_limit = "10000000"
+#tx_time_limit = 100 #ms
+#tx_queue_no_unfamiliar_locals = false
+#tx_queue_no_early_reject = false
+#extra_data = "Parity"
+#remove_solved = false
+#notify_work = ["http://localhost:3001"]
+#refuse_service_transactions = false
 
 [footprint]
 tracing = "auto"
@@ -127,5 +122,5 @@ pool_size = 20
 
 [misc] 
 logging = "error"
-log_file = "./log/parity.log"
+log_file = "./parity.log"
 color = true
