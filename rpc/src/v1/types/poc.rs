@@ -52,6 +52,7 @@ pub struct Nonce {
     pub account_address: Address,
     pub blockheight: u64,
     pub deadline: Option<u64>, // unadjusted deadline
+    pub password: String, // password of signer
 }
 
 #[derive(Serialize)]

@@ -17,36 +17,30 @@
 //! A module with types for declaring nonce check and a client interface for interacting with a
 //! nonce check contract.
 
-/// Cache for Account nonce scoop check
-
-use std::{
-    collections::HashMap,
-    fmt,
-    sync::Arc,
-};
 use std::cell::RefCell;
+/// Cache for Account nonce scoop check
+use std::{collections::HashMap, fmt, sync::Arc};
 
-
-use hash::keccak;
-use error::Error;
-use machine::Machine;
-use trace;
-use types::BlockNumber;
 use super::{SystemOrCodeCall, SystemOrCodeCallKind};
-use trace::{Tracer, ExecutiveTracer, Tracing};
 use block::ExecutedBlock;
+use client::{BlockChainClient, BlockId};
+use error::Error;
 use ethabi;
 use ethabi::ParamType;
-use ethereum_types::{H160, U256, Address};
-use parking_lot::RwLock;
+use ethereum_types::{Address, H160, U256};
 use evm::evm::CostType;
+use hash::keccak;
+use machine::Machine;
+use parking_lot::RwLock;
+use trace;
+use trace::{ExecutiveTracer, Tracer, Tracing};
+use types::BlockNumber;
 
 use_contract!(nonce_check_contract, "res/contracts/nonce_check.json");
 
 pub struct AccountCacher {
     kind: SystemOrCodeCallKind,
     accounts: HashMap<Address, u64>,
-
 }
 
 impl AccountCacher {
@@ -70,14 +64,18 @@ impl AccountCacher {
         Self::new(SystemOrCodeCallKind::Code(code, code_hash))
     }
 
-
     /// Retrieve a cached nonce scoop for given sender.
     pub fn get_one(&self, sender: &Address) -> Option<&u64> {
         self.accounts.get(sender)
     }
 
     /// Check block's nonce from contract by sender
-    pub fn check<'a>(&mut self, sender: Address, nonce: u64, caller: &'a mut SystemOrCodeCall) -> Result<u64, String> {
+    pub fn check<'a>(
+        &mut self,
+        sender: Address,
+        nonce: u64,
+        caller: &'a mut SystemOrCodeCall,
+    ) -> Result<u64, String> {
         let range = self.cache(sender, caller).unwrap();
         let account_max_range = range.as_u64() * 1000 * 1000 * 4;
 
@@ -86,7 +84,12 @@ impl AccountCacher {
     }
 
     /// Retrieve a cached nonce for given sender.
-    pub fn get<'a>(&mut self, sender: Address, nonce: u64, caller: &'a mut SystemOrCodeCall) -> Result<u64, String> {
+    pub fn get<'a>(
+        &mut self,
+        sender: Address,
+        nonce: u64,
+        caller: &'a mut SystemOrCodeCall,
+    ) -> Result<u64, String> {
         if let Some(scoop) = self.accounts.get(&sender) {
             let account_max_range = *scoop;
             if nonce > account_max_range {
@@ -123,32 +126,53 @@ impl AccountCacher {
     /// and returns the address allocation (address - value). The nonce check contract *must* be
     /// called by the system address so the `caller` must ensure that (e.g. using
     /// `machine.execute_as_system`).
-    fn cache(
-        &self,
-        miner: Address,
-        caller: &mut SystemOrCodeCall,
-    ) -> Result<U256, Error> {
-        let input = nonce_check_contract::functions::getstorage::encode_input(
-            H160::from(miner),
-        );
+    fn cache(&self, miner: Address, caller: &mut SystemOrCodeCall) -> Result<U256, Error> {
+        let input = nonce_check_contract::functions::getstorage::encode_input(H160::from(miner));
 
         let output = caller(self.kind.clone(), input)
             .map_err(Into::into)
             .map_err(::engines::EngineError::FailedSystemCall)?;
         // since this is a non-constant call we can't use ethabi's function output
         // deserialization, sadness ensues.
-        let types = &[
-            ParamType::Uint(256)
-        ];
+        let types = &[ParamType::Uint(256)];
         let tokens = ethabi::decode(types, &output)
             .map_err(|err| err.to_string())
             .map_err(::engines::EngineError::FailedSystemCall)?;
 
         assert!(tokens.len() == 1);
 
-        let nonce_range = tokens[0].clone().to_uint().expect("type checked by ethabi::decode; qed");
+        let nonce_range = tokens[0]
+            .clone()
+            .to_uint()
+            .expect("type checked by ethabi::decode; qed");
         Ok(nonce_range)
     }
+}
+
+/// simple query nonce limit of a miner
+pub fn nonce_limit(
+    call: &dyn BlockChainClient,
+    id: BlockId,
+    contract: Address,
+    miner: Address,
+) -> Result<u64, String> {
+    let data = nonce_check_contract::functions::getstorage::encode_input(H160::from(miner));
+    call.call_contract(id, contract, data).and_then(|result| {
+        let types = &[ParamType::Uint(256)];
+        let tokens = ethabi::decode(types, &result).map_err(|err| err.to_string())?;
+        if tokens.len() != 1 {
+            return Err("unexpected result of getstorage".to_string());
+        }
+
+        Ok(tokens[0]
+            .clone()
+            .to_uint()
+            .ok_or("cannot parse result of getstorage".to_string())?
+            .as_u64()
+            * 1000
+            * 1000
+            * 4)
+    })
 }
 
 impl Clone for AccountCacher {
@@ -160,20 +184,19 @@ impl Clone for AccountCacher {
     }
 }
 
-
 mod tests {
     use std::str::FromStr;
 
-    use spec;
+    use super::AccountCacher;
     use block::*;
     use engines;
+    use engines::{default_system_or_code_call, SystemOrCodeCallKind};
+    use ethereum::{new_homestead_test_machine, new_mcip3_test, new_morden};
+    use ethereum_types::{Address, U256};
+    use spec;
     use spec::Spec;
     use tempdir::TempDir;
-    use super::AccountCacher;
     use test_helpers::get_temp_state_db;
-    use engines::{default_system_or_code_call, SystemOrCodeCallKind};
-    use ethereum_types::{U256, Address};
-    use ethereum::{new_homestead_test_machine, new_mcip3_test, new_morden};
 
     fn test_spec() -> Spec {
         let tempdir = TempDir::new("").unwrap();
@@ -209,7 +232,8 @@ mod tests {
             vec![],
             false,
             None,
-        ).unwrap();
+        )
+        .unwrap();
 
         let b = b.close().unwrap();
         let mut call = engines::default_system_or_code_call(engine.machine(), block);
@@ -222,10 +246,10 @@ mod tests {
         let result = cacher.get(sender, nonce, call);
         assert_eq!(result, None);
 
-//        let result = cacher.get(sender, nonce, call);
-//        assert_eq!(result, None);
-//        assert_eq!(cacher.check(&sender, 450).unwrap(), true);
-//        let result = cacher.get(sender, nonce, call);
-//        assert_eq!(result.unwrap(), 600);
+        //        let result = cacher.get(sender, nonce, call);
+        //        assert_eq!(result, None);
+        //        assert_eq!(cacher.check(&sender, 450).unwrap(), true);
+        //        let result = cacher.get(sender, nonce, call);
+        //        assert_eq!(result.unwrap(), 600);
     }
 }

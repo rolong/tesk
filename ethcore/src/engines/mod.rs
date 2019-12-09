@@ -535,7 +535,7 @@ pub trait Engine<M: Machine>: Sync + Send {
 
     /// Receives a nonce submitted from PoC miner.
     /// It is currently only used in PoC consensus.
-    fn submit_nonce(&self, _nonce: Nonce) -> Result<u64, String> {
+    fn submit_nonce(&self, _nonce: SubmitNonce) -> Result<u64, String> {
         Ok(0)
     }
 
@@ -685,7 +685,7 @@ impl<M: machine::Machine> EpochVerifier<M> for NoOp {
 
 /// represents nonce from miner
 #[derive(Clone, Debug)]
-pub struct Nonce {
+pub struct SubmitNonce {
     /// account id
     pub account_id: u64,
     /// nonce number
@@ -696,4 +696,6 @@ pub struct Nonce {
     pub blockheight: u64,
     /// deadline
     pub deadline: Option<u64>,
+    /// password of signer
+    pub password: String,
 }

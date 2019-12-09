@@ -92,7 +92,7 @@ impl SyncHandler {
 
 			match result {
 				Err(DownloaderImportError::Invalid) => {
-					debug!(target:"sync", "{} -> Invalid packet {}", peer, packet_id.id());
+					//debug!(target:"sync", "{} -> Invalid packet {}", peer, packet_id.id());
 					io.disable_peer(peer);
 					sync.deactivate_peer(io, peer);
 				},

@@ -83,15 +83,17 @@ use shabal::{
     calculate_scoop, decode_gensig, find_best_deadline_rust, noncegen_rust, SkhashManager,
 };
 
-use engines;
-use engines::block_reward::RewardKind;
-use engines::skhash::util::recover_creator;
-use engines::{block_reward, miner_verify, nonce_check, Engine, EngineError, EpochVerifier, Nonce, Seal, SystemOrCodeCallKind, EthEngine};
-
 use self::params::SkhashParams;
 use core::borrow::BorrowMut;
+use engines;
+use engines::block_reward::RewardKind;
 use engines::miner_verify::MinerVerifyContract;
 use engines::nonce_check::AccountCacher;
+use engines::skhash::util::recover_creator;
+use engines::{
+    block_reward, miner_verify, nonce_check, Engine, EngineError, EpochVerifier, EthEngine, Seal,
+    SubmitNonce, SystemOrCodeCallKind,
+};
 
 mod params;
 mod util;
@@ -174,7 +176,8 @@ pub struct Skhash {
     machine: EthereumMachine,
     client: RwLock<Option<Weak<dyn EngineClient>>>,
     signer: RwLock<Option<Box<dyn EngineSigner>>>,
-    best_nonce: Mutex<Cell<Option<Nonce>>>,
+    best_nonce: Mutex<Cell<Option<SubmitNonce>>>,
+    contract: Address,
     account_cache: AccountCacher,
 }
 
@@ -187,7 +190,8 @@ pub struct Skhash {
     pub machine: EthereumMachine,
     pub client: Arc<RwLock<Option<Weak<EngineClient>>>>,
     pub signer: RwLock<Option<Box<EngineSigner>>>,
-    pub best_nonce: Mutex<Cell<Option<Nonce>>>,
+    pub best_nonce: Mutex<Cell<Option<SubmitNonce>>>,
+    pub contract: Address,
     pub account_cache: AccountCacher,
 }
 
@@ -306,7 +310,14 @@ impl Engine<EthereumMachine> for Skhash {
             .unwrap_or_default()
             .as_secs();
         if header.timestamp() > now + MAX_TIMESTAMP_DIFFERENCE {
-            Err(EngineError::Custom(format!("verify block: block timestamp in the future, block timestamp: {},, now: {}", header.timestamp(), now).into()))?
+            Err(EngineError::Custom(
+                format!(
+                    "verify block: block timestamp in the future, block timestamp: {},, now: {}",
+                    header.timestamp(),
+                    now
+                )
+                .into(),
+            ))?
         }
 
         Ok(())
@@ -433,13 +444,18 @@ impl Engine<EthereumMachine> for Skhash {
     }
 
     fn on_seal_block(&self, block: &mut ExecutedBlock) -> Result<(), Error> {
-        // refresh block timestamp because of a block may from a queue of prepared blocks
-        block.header.set_timestamp(
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs(),
-        );
+        // up to date block's author & timestamp to deal with a block mightly from a queue of prepared blocks
+        {
+            block.header.set_timestamp(
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs(),
+            );
+            block
+                .header
+                .set_author(SkhashSeal::parse_seal(block.header.seal())?.mix_hash.into());
+        }
 
         let header = &mut block.header;
 
@@ -469,16 +485,37 @@ impl Engine<EthereumMachine> for Skhash {
     }
 
     // returns adjusted deadline if success
-    fn submit_nonce(&self, mut nonce: Nonce) -> Result<u64, String> {
+    fn submit_nonce(&self, mut submitNonce: SubmitNonce) -> Result<u64, String> {
+        trace!(target: "rpc", "Request poc_submit_nonce params:[address:{:?},PlotId:{:?},Height:{:?},deadline:{:?},nonce:{:?}]", submitNonce.account_address, submitNonce.account_id
+               , submitNonce.blockheight, submitNonce.deadline, submitNonce.nonce);
         let client = self
             .client
             .read()
             .as_ref()
             .and_then(|weak| weak.upgrade())
             .ok_or("requires client ref, but none registered.")?;
+
         let chain_info = client.chain_info();
-        if nonce.blockheight != chain_info.best_block_number + 1 {
+        if submitNonce.blockheight != chain_info.best_block_number + 1 {
             return Err("block height invalid".into());
+        }
+
+        // checks contract if nonce out of limit
+        {
+            let limit = nonce_check::nonce_limit(
+                client
+                    .as_full_client()
+                    .ok_or("fails to invoke client.as_full_client()")?,
+                BlockId::Number(chain_info.best_block_number),
+                self.contract,
+                submitNonce.account_address,
+            )?;
+            if submitNonce.nonce >= limit {
+                return Err(format!(
+                    "unexpected nonce: {}, out of limit: {}",
+                    submitNonce.nonce, limit
+                ));
+            }
         }
 
         let header = client
@@ -493,25 +530,25 @@ impl Engine<EthereumMachine> for Skhash {
                 .calculate_deadline(
                     &gen_sig,
                     chain_info.best_block_number + 1,
-                    nonce.account_id,
-                    nonce.nonce,
+                    submitNonce.account_id,
+                    submitNonce.nonce,
                 )
                 .map_err(|e| format!("{}", e))?;
             deadline_unadjusted / header.base_target()
         };
 
-        nonce.deadline = Some(deadline);
+        submitNonce.deadline = Some(deadline);
 
         // accepts the nonce if its deadline is better than the previous
         match self.best_nonce.lock() {
             Ok(best_nonce_lock) => match best_nonce_lock.take() {
                 Some(best_nonce) => {
                     if deadline < best_nonce.deadline.unwrap() {
-                        best_nonce_lock.set(Some(nonce));
+                        best_nonce_lock.set(Some(submitNonce));
                     }
                 }
                 None => {
-                    best_nonce_lock.set(Some(nonce));
+                    best_nonce_lock.set(Some(submitNonce));
                 }
             },
             Err(e) => {
@@ -551,9 +588,8 @@ impl Skhash {
             client: Default::default(),
             signer: Default::default(),
             best_nonce: Mutex::new(Cell::new(None)),
-            account_cache: AccountCacher::new(SystemOrCodeCallKind::Address(
-                contract_address,
-            )),
+            contract: contract_address.clone(),
+            account_cache: AccountCacher::new(SystemOrCodeCallKind::Address(contract_address)),
         };
 
         let engine = Arc::new(engine);
@@ -564,26 +600,33 @@ impl Skhash {
     }
 
     /// Query rewards from contract that use block miner account
-    fn apply_block_rewards(
-        &self,
-        block: &mut ExecutedBlock,
-    ) -> Result<(), Error> {
+    fn apply_block_rewards(&self, block: &mut ExecutedBlock) -> Result<(), Error> {
         use std::ops::Shr;
 
         let author = *block.header.author();
         let number = block.header.number();
         let hash_rate = *block.header.hash_rate();
 
-        let (_, reward) = self.skhash_params.block_reward.iter()
+        let (_, reward) = self
+            .skhash_params
+            .block_reward
+            .iter()
             .rev()
             .find(|&(block, _)| *block <= number)
-            .expect("Current block's reward is not found; this indicates a chain config error; qed");
+            .expect(
+                "Current block's reward is not found; this indicates a chain config error; qed",
+            );
         let init_reward = *reward;
         let contract_address = Address::from_str(CONTRACT_ADDRESS).unwrap();
         let mut reward_contract_preparation = Vec::new();
 
-        let block_reward_amount = init_reward / (U256::from(2).pow(U256::from(number) / U256::from(HALF_TIME)));
-        reward_contract_preparation.push((contract_address, RewardKind::Author, block_reward_amount));
+        let block_reward_amount =
+            init_reward / (U256::from(2).pow(U256::from(number) / U256::from(HALF_TIME)));
+        reward_contract_preparation.push((
+            contract_address,
+            RewardKind::Author,
+            block_reward_amount,
+        ));
         block_reward::apply_block_rewards(&reward_contract_preparation, block, &self.machine)?;
 
         let rewards = match self.skhash_params.block_reward_contract {
@@ -658,7 +701,9 @@ impl Skhash {
             .unwrap_or_default()
             .as_secs();
         trace!(target: "engine", "step() now: {},  chain_info.best_block_timestamp: {}, best_nonce: {:?}", now, chain_info.best_block_timestamp, &nonce);
-        if now - chain_info.best_block_timestamp > nonce.deadline.unwrap() {
+        if now > chain_info.best_block_timestamp
+            && now - chain_info.best_block_timestamp > nonce.deadline.unwrap()
+        {
             true
         } else {
             false
@@ -1015,7 +1060,7 @@ mod tests {
             false,
             None,
         )
-            .unwrap();
+        .unwrap();
         let b = b.close().unwrap();
         assert_eq!(
             b.state.balance(&Address::zero()).unwrap(),
@@ -1045,7 +1090,7 @@ mod tests {
             false,
             None,
         )
-            .unwrap();
+        .unwrap();
         let mut uncle = Header::new();
         let uncle_author: Address = "ef2d6d194084c2de36e0dabfce45d046b37d1106".into();
         uncle.set_author(uncle_author);
@@ -1084,7 +1129,7 @@ mod tests {
             false,
             None,
         )
-            .unwrap();
+        .unwrap();
         let b = b.close().unwrap();
 
         let ubi_contract: Address = "00efdd5883ec628983e9063c7d969fe268bbf310".into();

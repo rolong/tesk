@@ -19,8 +19,8 @@
 use accounts::AccountProvider;
 use ethcore::client::StateInfo;
 use ethcore::client::{BlockInfo, EngineInfo};
-use ethcore::engines::Nonce as EngineNonce;
-use ethcore::miner::MinerService;
+use ethcore::engines::SubmitNonce;
+use ethcore::miner::{self, MinerService};
 use ethereum_types::Address;
 use jsonrpc_core::Result;
 use std::str::FromStr;
@@ -28,6 +28,7 @@ use std::sync::Arc;
 use v1::helpers::errors::invalid_params;
 use v1::traits::EthMining;
 use v1::types::{MiningInfo, Nonce, SubmitNonceResponse};
+use v1::helpers::engine_signer::EngineSigner;
 
 /// Eth mining rpc implementation for a full node.
 pub struct EthMiningClient<C, M> {
@@ -37,9 +38,9 @@ pub struct EthMiningClient<C, M> {
 }
 
 impl<C, M, T: StateInfo + 'static> EthMiningClient<C, M>
-where
-    C: BlockInfo + EngineInfo + Send + Sync + 'static,
-    M: MinerService<State = T>,
+    where
+        C: BlockInfo + EngineInfo + Send + Sync + 'static,
+        M: MinerService<State=T>,
 {
     pub fn new(accounts: &Arc<AccountProvider>, client: &Arc<C>, miner: &Arc<M>) -> Self {
         Self {
@@ -51,9 +52,9 @@ where
 }
 
 impl<C, M, T: StateInfo + 'static> EthMining for EthMiningClient<C, M>
-where
-    C: BlockInfo + EngineInfo + Send + Sync + 'static,
-    M: MinerService<State = T> + 'static,
+    where
+        C: BlockInfo + EngineInfo + Send + Sync + 'static,
+        M: MinerService<State=T> + 'static,
 {
     fn get_mining_info(&self) -> Result<MiningInfo> {
         let header = self.client.best_block_header();
@@ -72,18 +73,34 @@ where
             return Err(invalid_params("account_address", "address not found"));
         }
         */
+        let mut password = String::from("");
+        if nonce.password.len() > 0 {
+            password = nonce.password.clone();
+        }
 
         let deadline = self
             .client
             .engine()
-            .submit_nonce(EngineNonce {
+            .submit_nonce(SubmitNonce {
                 account_id: nonce.account_id,
                 nonce: nonce.nonce,
                 account_address: nonce.account_address,
                 blockheight: nonce.blockheight,
                 deadline: nonce.deadline,
+                password: password.clone(),
             })
             .map_err(|e| invalid_params("nonce", e))?;
+
+        let hash_password = password.len() > 0;
+
+        if hash_password {
+            let signer = Box::new(EngineSigner::new(
+                self.accounts.clone(),
+                nonce.account_address.clone().into(),
+                password.into(),
+            ));
+            self.miner.set_author(miner::Author::Sealer(signer));
+        }
 
         Ok(SubmitNonceResponse { deadline })
     }
